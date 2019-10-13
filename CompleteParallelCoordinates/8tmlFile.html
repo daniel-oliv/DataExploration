@@ -7,63 +7,83 @@
   </head>
   <body>
   <div id="header">
-    <h1>Parallel coordinates</h1>
-    <button title="Zoom in on selected data" id="keep-data" disabled="disabled">Keep</button>
-    <button title="Remove selected data" id="exclude-data" disabled="disabled">Exclude</button>
-    <button title="Export data as CSV" id="export-data">Export</button>
+    <h1>Coordenadas Paralelas</h1>
+    <button title="Zoom in no dado selecionado" id="keep-data" disabled="disabled">Selecionar</button>
+    <button title="Remove selected data" id="exclude-data" disabled="disabled">Excluir</button>
+    <button title="Export data as CSV" id="export-data">Exportar</button>
     <div class="controls">
       <strong id="rendered-count"></strong>/<strong id="selected-count"></strong><!--<strong id="data-count"></strong>-->
       <div class="fillbar"><div id="selected-bar"><div id="rendered-bar">&nbsp;</div></div></div>
-      Lines at <strong id="opacity"></strong> opacity.
+      Linhas em <strong id="opacity"></strong> de opacidade.
       <span class="settings">
-        <button id="hide-ticks">Hide Ticks</button>
-        <button id="show-ticks" disabled="disabled">Show Ticks</button>
+        <button id="hide-ticks">Esconder marcadores</button>
+        <button id="show-ticks" disabled="disabled"> Mostrar marcadores</button>
         <button id="dark-theme">Dark</button>
         <button id="light-theme" disabled="disabled">Light</button>
       </span>
     </div>
+    
     <div style="clear:both;"></div>
   </div>
+
+  <div class="wrap">
+    <div class="half">
+      <h3>Dados disponíveis <br><input type="text" id="search-dimension" placeholder="Busque por atributos..."></input></h3>
+      <div class="tooltip">
+        <p id="column-list"></p>
+        <span class="tooltiptext">Clique para incluir ou excluir dados</span>
+      </div>
+    </div>
+    <div class="half">
+        <h3>Dados ativos</h3>
+        <div class="tooltip">
+          <p id="active-columns"></p>
+          <span class="tooltiptext">Clique para incluir ou excluir dados</span>
+        </div>
+    </div>
+  </div>
+  
+    <div style="clear:both;"></div>
+
   <div id="chart">
     <canvas id="background"></canvas>
     <canvas id="foreground"></canvas>
     <canvas id="highlight"></canvas>
     <svg></svg>
   </div>
-  <div id="wrap">
+  <div class="wrap">
     <div class="third" id="controls">
       <div class="bright">
-        <h3>What is this?</h3>
-        <p>
-          A multidimensional explorer of <a href="nutrients.csv">nutrient data</a> from the <a href="http://ndb.nal.usda.gov/">USDA</a>.
-        </p>
-        <p>
-          The parallel coordinates displays the nutrient content of foods in the database across 14 dimensions, colored by food group. 
-        </p>
-        <p>
-          <a href="https://eagereyes.org/techniques/parallel-coordinate">Never heard of parallel coordinates? Read this tutorial.</a>
-        </p>
-        <p>
-          <a href="https://eagereyes.org/techniques/parallel-coordinates#brushing">Brush</a> the visualization to update other charts on this page.
-        </p>
-        <p>
-          Let me know what you think on <a href="https://www.reddit.com/r/d3js/comments/xh2ks/nutrition_parallel_coordinates_canvas/">Reddit</a>.
-        </p>
+        <h3>Legenda de cores por </h3>
+        <select>
+            <option value="region">Regiões</option>
+            <option value="states">Estados</option>
+        </select>
+        <br>
+        <h3>Selecionar região</h3>
+        <select>
+            <option value="region">Todas</option>
+        </select>
+        <h3>Selecionar estado</h3>
+        <select>
+            <option value="region">Todos</option>
+        </select>
+        
       </div>
 
       <div class="little-box">
         <h3>Controls</h3>
         <p>
-          <strong>Brush</strong>: Drag vertically along an axis.<br/>
-          <strong>Remove Brush</strong>: Tap the axis background.<br/>
-          <strong>Reorder Axes</strong>: Drag a label horizontally.<br/>
-          <strong>Invert Axis</strong>: Tap an axis label.<br/>
-          <strong>Remove Axis</strong>: Drag axis label to the left edge.<br/>
+          <strong>Brush</strong>: Drag vertically along an axis.<br>
+          <strong>Remove Brush</strong>: Tap the axis background.<br>
+          <strong>Reorder Axes</strong>: Drag a label horizontally.<br>
+          <strong>Invert Axis</strong>: Tap an axis label.<br>
+          <strong>Remove Axis</strong>: Drag axis label to the left edge.<br>
         </p>
       </div>
       <div class="little-box">
         <h3>Credits &amp; License</h3>
-          <p>
+        <p>
           Adapted from examples by<br/>
           <a href="http://bl.ocks.org/1341021">Mike Bostock</a> and <a href="http://bl.ocks.org/1341281">Jason Davies</a><br/>
           </p>
@@ -78,18 +98,60 @@
       <small>
         <!--Last rendered <strong id="render-speed"></strong> lines-->
       </small>
-      <h3>Food Groups</h3>
+      <h3>Estados</h3>
       <p id="legend">
       </p>
     </div>
     <div class="third">
-      <h3>Sample of 25 entries <input type="text" id="search" placeholder="Search Foods..."></input></h3>
-      <p id="food-list">
+      <h3>Amostra de 25 entradas <input type="text" id="search" placeholder="Busque por cidades..."></input></h3>
+      <p id="cities-list">
       </p>
     </div>
   </div>
+  <dir class="wrap">
+    <div class="third" id="controls">
+      <div class="bright">
+        <h3>Outras Informações</h3>
+        <p>
+          Dados provenientes dos censos realizados pelo IBGE.
+        </p>
+        <p>
+          Comtemplam diversos atributos da população.
+        </p>
+        <p>
+          <a href="http://www.ipea.gov.br/ipeageo/bases.html"> Os dados ser obtidos no site do Ipea. </a>
+        </p>
+        <p>
+          E no site do <a href="http://www.atlasbrasil.org.br/2013/pt/consulta/">Atlas do Desenvovimento Humano no Brasil</a>.
+        </p>
+      </div>
+
+      <div class="little-box">
+        <h3>Controls</h3>
+        <p>
+          <strong>Brush</strong>: Drag vertically along an axis.<br>
+          <strong>Remove Brush</strong>: Tap the axis background.<br>
+          <strong>Reorder Axes</strong>: Drag a label horizontally.<br>
+          <strong>Invert Axis</strong>: Tap an axis label.<br>
+          <strong>Remove Axis</strong>: Drag axis label to the left edge.<br>
+        </p>
+      </div>
+      <div class="little-box">
+        <h3>Credits &amp; License</h3>
+        <p>
+          Adapted from examples by<br/>
+          <a href="http://bl.ocks.org/1341021">Mike Bostock</a> and <a href="http://bl.ocks.org/1341281">Jason Davies</a><br/>
+          </p>
+          <p>
+            Copyright &copy; 2012, Kai Chang<br/>
+            All rights reserved. Released under the <a href="https://opensource.org/licenses/bsd-3-clause">BSD License</a>.
+          </p>
+        </p>
+      </div>
+    </div>
+  </dir>
   </body>
-  <script src="https://mbostock.github.com/d3/d3.v2.js"></script>
-  <script src="http://underscorejs.org/underscore.js"></script>
+  <script src="d3.v2.js"></script>
+  <script src="underscore.js"></script>
   <script src="parallel.js"></script>
 </html>

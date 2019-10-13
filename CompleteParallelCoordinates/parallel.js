@@ -24,7 +24,7 @@ var m = [60, 0, 10, 0],
     excluded_groups = [];
 
 var colors = {
-  "Brasil": [185,56,73],
+  //"Brasil": [185,56,73],
   "Acre": [185,56,73],
   "Alagoas": [185,56,73],
   "Amapá": [10,28,67],
@@ -53,6 +53,17 @@ var colors = {
   "Sergipe": [185,56,73],
   "Tocantins": [10,28,67],
 };
+
+var regionColors = {
+  "Norte": [120,56,40],
+  "Nordeste": [28,100,52],
+  "Centro-Oeste": [359,69,49],
+  "Sudeste": [185,56,73],
+  "Sul": [60,86,61]
+};
+
+var activeColumns = [];
+var all_columns = [];
 
 // Scale chart and canvas height
 d3.select("#chart")
@@ -89,30 +100,36 @@ var svg = d3.select("svg")
     .attr("transform", "translate(" + m[3] + "," + m[0] + ")");
 
 // Load the data and visualization
-d3.csv("https://raw.githubusercontent.com/daniel-oliv/dataRep/master/superior20002010.csv", function(raw_data) {
-  // Convert quantitative scales to floats
-  console.log("raw_data",raw_data);
+d3.csv("https://raw.githubusercontent.com/daniel-oliv/dataRep/master/2000-2010.csv", function(raw_data) {
   data = raw_data.map(function(d) {
-    console.log("new row: raw_data[1] ", raw_data[1]);
+    //console.log("new row: raw_data[1] ", raw_data[1]);
     for (var k in d) {
-      console.log("raw_data[0][k]", raw_data[0][k]);
+      //console.log(k);
+      //console.log("raw_data[0][k]", raw_data[0][k]);
       if (!_.isNaN(raw_data[0][k] - 0) && k != 'id') {
         d[k] = parseFloat(d[k]) || 0;
       }
     };
     return d;
   });
-
-  // Extract the list of numerical dimensions and create a scale for each.
+  
+  //console.log(data);
+  //filling the all columns span
+  all_columns = d3.keys(data[0]).filter(function(k) {return (_.isNumber(data[0][k]))});
+  activeColumns =  all_columns.slice(0,5);
+  fillAllColumns(all_columns.slice(0,10));  
+  
   xscale.domain(dimensions = d3.keys(data[0]).filter(function(k) {
-    return (_.isNumber(data[0][k])) && (yscale[k] = d3.scale.linear()
+    return (_.isNumber(data[0][k])) && (yscale[k] = d3.scale.linear() 
       .domain(d3.extent(data, function(d) { return +d[k]; }))
-      .range([h, 0]));
+      .range([h, 0])) && activeColumns.includes(k);
   }).sort());
 
+  dimensionsToShow = dimensions;
   // Add a group element for each dimension.
+  svg.selectAll(".dimension").remove();
   var g = svg.selectAll(".dimension")
-      .data(dimensions)
+      .data(dimensionsToShow)
     .enter().append("svg:g")
       .attr("class", "dimension")
       .attr("transform", function(d) { return "translate(" + xscale(d) + ")"; })
@@ -124,16 +141,18 @@ d3.csv("https://raw.githubusercontent.com/daniel-oliv/dataRep/master/superior200
         })
         .on("drag", function(d) {
           dragging[d] = Math.min(w, Math.max(0, this.__origin__ += d3.event.dx));
-          dimensions.sort(function(a, b) { return position(a) - position(b); });
-          xscale.domain(dimensions);
+          dimensionsToShow.sort(function(a, b) { return position(a) - position(b); });
+          xscale.domain(dimensionsToShow);
           g.attr("transform", function(d) { return "translate(" + position(d) + ")"; });
           brush_count++;
           this.__dragged__ = true;
 
           // Feedback for axis deletion if dropped
           if (dragging[d] < 12 || dragging[d] > w-12) {
+            console.log("here");
             d3.select(this).select(".background").style("fill", "#b00");
           } else {
+            console.log("tchau");
             d3.select(this).select(".background").style("fill", null);
           }
         })
@@ -155,7 +174,7 @@ d3.csv("https://raw.githubusercontent.com/daniel-oliv/dataRep/master/superior200
           }
 
           // TODO required to avoid a bug
-          xscale.domain(dimensions);
+          xscale.domain(dimensionsToShow);
           update_ticks(d, extent);
 
           // rerender
@@ -200,8 +219,118 @@ d3.csv("https://raw.githubusercontent.com/daniel-oliv/dataRep/master/superior200
 
   // Render full foreground
   brush();
+  //drawAxis();
+
 
 });
+
+function drawAxis()
+{
+  //d3.keys(data[0]).forEach(function(k) {console.log("Eu " + k.toString())});
+
+  // Extract the list of numerical dimensions and create a scale for each.
+  xscale.domain(dimensions = d3.keys(data[0]).filter(function(k) {
+    return (_.isNumber(data[0][k])) && activeColumns.includes(k) && (yscale[k] = d3.scale.linear()
+      .domain(d3.extent(data, function(d) { return +d[k]; }))
+      .range([h, 0]));
+  }).sort());
+
+  dimensionsToShow = dimensions;
+  // Add a group element for each dimension.
+  svg.selectAll(".dimension").remove();
+  var g = svg.selectAll(".dimension")
+      .data(dimensionsToShow)
+    .enter().append("svg:g")
+      .attr("class", "dimension")
+      .attr("transform", function(d) { return "translate(" + xscale(d) + ")"; })
+      .call(d3.behavior.drag()
+        .on("dragstart", function(d) {
+          dragging[d] = this.__origin__ = xscale(d);
+          this.__dragged__ = false;
+          d3.select("#foreground").style("opacity", "0.35");
+        })
+        .on("drag", function(d) {
+          dragging[d] = Math.min(w, Math.max(0, this.__origin__ += d3.event.dx));
+          dimensionsToShow.sort(function(a, b) { return position(a) - position(b); });
+          xscale.domain(dimensionsToShow);
+          g.attr("transform", function(d) { return "translate(" + position(d) + ")"; });
+          brush_count++;
+          this.__dragged__ = true;
+
+          // Feedback for axis deletion if dropped
+          if (dragging[d] < 12 || dragging[d] > w-12) {
+            console.log("here");
+            d3.select(this).select(".background").style("fill", "#b00");
+          } else {
+            console.log("tchau");
+            d3.select(this).select(".background").style("fill", null);
+          }
+        })
+        .on("dragend", function(d) {
+          if (!this.__dragged__) {
+            // no movement, invert axis
+            var extent = invert_axis(d);
+
+          } else {
+            // reorder axes
+            d3.select(this).transition().attr("transform", "translate(" + xscale(d) + ")");
+
+            var extent = yscale[d].brush.extent();
+          }
+
+          // remove axis if dragged all the way left
+          if (dragging[d] < 12 || dragging[d] > w-12) {
+            remove_axis(d,g);
+          }
+
+          // TODO required to avoid a bug
+          xscale.domain(dimensionsToShow);
+          update_ticks(d, extent);
+
+          // rerender
+          d3.select("#foreground").style("opacity", null);
+          brush();
+          delete this.__dragged__;
+          delete this.__origin__;
+          delete dragging[d];
+        }))
+
+  // Add an axis and title.
+  g.append("svg:g")
+      .attr("class", "axis")
+      .attr("transform", "translate(0,0)")
+      .each(function(d) { d3.select(this).call(axis.scale(yscale[d])); })
+    .append("svg:text")
+      .attr("text-anchor", "middle")
+      .attr("y", function(d,i) { return i%2 == 0 ? -14 : -30 } )
+      .attr("x", 0)
+      .attr("class", "label")
+      .text(String)
+      .append("title")
+        .text("Click to invert. Drag to reorder");
+
+  // Add and store a brush for each axis.
+  g.append("svg:g")
+      .attr("class", "brush")
+      .each(function(d) { d3.select(this).call(yscale[d].brush = d3.svg.brush().y(yscale[d]).on("brush", brush)); })
+    .selectAll("rect")
+      .style("visibility", null)
+      .attr("x", -23)
+      .attr("width", 36)
+      .append("title")
+        .text("Drag up or down to brush along this axis");
+
+  g.selectAll(".extent")
+      .append("title")
+        .text("Drag or resize this filter");
+
+
+  legend = create_legend(colors,brush);
+
+  // Render full foreground
+  brush();
+  rescale();
+}
 
 // copy one canvas to another, grayscale
 function gray_copy(source, target) {
@@ -234,15 +363,15 @@ function create_legend(colors,brush) {
   // filter by group
   var legend = legend_data
     .enter().append("div")
-      .attr("title", "Hide group")
+      .attr("title", "Esconder Grupo")
       .on("click", function(d) { 
         // toggle food group
         if (_.contains(excluded_groups, d)) {
-          d3.select(this).attr("title", "Hide group")
+          d3.select(this).attr("title", "Esconder Grupo")
           excluded_groups = _.difference(excluded_groups,[d]);
           brush();
         } else {
-          d3.select(this).attr("title", "Show group")
+          d3.select(this).attr("title", "Mostrar Grupo")
           excluded_groups.push(d);
           brush();
         }
@@ -274,20 +403,25 @@ function render_range(selection, i, max, opacity) {
 
 // simple data table
 function data_table(sample) {
+  console.log("data_table");
   // sort by first column
+  //console.log("sample ", sample);
+  //console.log("d3.keys ", d3.keys);
   var sample = sample.sort(function(a,b) {
+    //console.log("d3.keys(a) ", d3.keys(a));
     var col = d3.keys(a)[0];
     return a[col] < b[col] ? -1 : 1;
   });
 
-  var table = d3.select("#food-list")
+  var table = d3.select("#cities-list")
     .html("")
     .selectAll(".row")
       .data(sample)
     .enter().append("div")
       .on("mouseover", highlight)
       .on("mouseout", unhighlight);
-
+      
+  //console.log("table ", table);
   table
     .append("span")
       .attr("class", "color-block")
@@ -296,6 +430,51 @@ function data_table(sample) {
   table
     .append("span")
       .text(function(d) { return d.name; })
+}
+
+function fillAllColumns(all_columns) {
+
+  var column_list = d3.select("#column-list")
+    .html("")
+    .selectAll(".row")
+      .data(all_columns)
+    .enter().append("div")
+      .on("click", column_Selected)
+      .append("span")
+      .text(function(d) { return d; });
+      
+  //console.log("table ", table);
+  fillActiveColumnsTable(activeColumns);
+}
+
+function column_Selected($event)
+{
+  var curKey = event.srcElement.innerText;
+  var iActiveCol = activeColumns.indexOf(curKey);
+  if(iActiveCol >= 0 && activeColumns.length >=2)
+  {
+    activeColumns.splice(iActiveCol, 1);
+  }
+  else if(!activeColumns.includes(curKey))
+  {
+    activeColumns.push(curKey);
+  }
+  //console.log(event.srcElement.innerText);
+  fillActiveColumnsTable(activeColumns);
+  drawAxis();
+  brush();
+}
+
+function fillActiveColumnsTable(tableActiveColumns)
+{
+  var column_list = d3.select("#active-columns")
+    .html("")
+    .selectAll(".row")
+      .data(tableActiveColumns)
+    .enter().append("div")
+      .on("click", column_Selected)
+      .append("span")
+      .text(function(d) { return d; });
 }
 
 // Adjusts rendering speed 
@@ -409,10 +588,18 @@ function position(d) {
 // Handles a brush event, toggling the display of foreground lines.
 // TODO refactor
 function brush() {
+  var query = d3.select("#search-dimension")[0][0].value;
+  if (query.length > 0) {
+    fillAllColumns(searchStr(all_columns, query));
+  }
+  else{
+    fillAllColumns(all_columns.slice(0,10));
+  }
+
   brush_count++;
   var actives = dimensions.filter(function(p) { return !yscale[p].brush.empty(); }),
       extents = actives.map(function(p) { return yscale[p].brush.extent(); });
-
+      //dimensions.forEach((element)=>console.log(element) );
   // hack to hide ticks beyond extent
   var b = d3.selectAll('.dimension')[0]
     .forEach(function(element, i) {
@@ -600,7 +787,7 @@ function rescale() {
 function actives() {
   var actives = dimensions.filter(function(p) { return !yscale[p].brush.empty(); }),
       extents = actives.map(function(p) { return yscale[p].brush.extent(); });
-
+      //console.log(actives);
   // filter extents and excluded groups
   var selected = [];
   data
@@ -711,6 +898,8 @@ d3.select("#exclude-data").on("click", exclude_data);
 d3.select("#export-data").on("click", export_csv);
 d3.select("#search").on("keyup", brush);
 
+d3.select("#search-dimension").on("keyup", brush)
+
 
 // Appearance toggles
 d3.select("#hide-ticks").on("click", hide_ticks);
@@ -749,4 +938,9 @@ function light_theme() {
 function search(selection,str) {
   pattern = new RegExp(str,"i")
   return _(selection).filter(function(d) { return pattern.exec(d.name); });
+}
+
+function searchStr(selection,str) {
+  pattern = new RegExp(str,"i")
+  return _(selection).filter(function(d) { return pattern.exec(d.toString()); });
 }
