@@ -2,6 +2,8 @@
 // Copyright (c) 2012, Kai Chang
 // Released under the BSD License: http://opensource.org/licenses/BSD-3-Clause
 
+var data_years = [2000, 2010];
+
 var width = document.body.clientWidth,
     height = d3.max([document.body.clientHeight-540, 240]);
 
@@ -22,6 +24,8 @@ var m = [60, 0, 10, 0],
     render_speed = 50,
     brush_count = 0,
     excluded_groups = [];
+
+//var colorMode  = document.getElementById('color-mode').value;
 
 var colors = {
   //"Brasil": [185,56,73],
@@ -54,11 +58,42 @@ var colors = {
   "Tocantins": [10,28,67],
 };
 
+var states2Region = {
+  //"Brasil": [185,56,73],
+  "Acre": "Norte",
+  "Alagoas": "Nordeste",
+  "Amapá": "Norte",
+  "Amazonas": "Norte",
+  "Bahia": "Nordeste",
+  "Ceará": "Nordeste",
+  "Distrito Federal": "Centro-Oeste",
+  "Espírito Santo": "Sudeste",
+  "Goiás": "Centro-Oeste",
+  "Maranhão": "Nordeste",
+  "Mato Grosso": "Centro-Oeste",
+  "Mato Grosso do Sul": "Centro-Oeste",
+  "Minas Gerais": "Sudeste",
+  "Pará": "Norte",
+  "Paraíba": "Nordeste",
+  "Paraná": "Sul",
+  "Pernambuco": "Nordeste",
+  "Piauí": "Nordeste",
+  "Rio de Janeiro": "Sudeste",
+  "Rio Grande do Norte": "Nordeste",
+  "Rio Grande do Sul": "Sul",
+  "Rondônia": "Norte",
+  "Roraima": "Norte",
+  "Santa Catarina": "Sul",
+  "São Paulo": "Sudeste",
+  "Sergipe": "Nordeste",
+  "Tocantins": "Centro-Oeste",
+};
+
 var regionColors = {
   "Norte": [120,56,40],
   "Nordeste": [28,100,52],
   "Centro-Oeste": [359,69,49],
-  "Sudeste": [185,56,73],
+  "Sudeste": [204,70,41],
   "Sul": [60,86,61]
 };
 
@@ -74,6 +109,35 @@ d3.selectAll("canvas")
     .attr("height", h)
     .style("padding", m.join("px ") + "px");
 
+d3.select("#region-select")
+    .selectAll("option")
+    .data(d3.keys(regionColors), function(d){return d;})
+    .enter()
+    .append("option")
+    .attr("value", function(d){return d})
+    .text(function(d){return d});
+
+function fillStateSelect(optionsNames){
+
+  //d3.select("#state-select").selectAll("option").remove();
+  
+  // d3.select("#state-select")
+  //   .selectAll("option")
+  //   .data("Todos")
+  //   .enter()
+  //   .append("option")
+  //   .attr("value", "all")
+  //   .text("Todos");
+
+  d3.select("#state-select")
+    .selectAll("option")
+    .data(optionsNames, function(d){return d;})
+    .enter()
+    .append("option")
+    .attr("value", function(d){return d})
+    .text(function(d){return d});
+}
+fillStateSelect(d3.keys(states2Region));
 
 // Foreground canvas for primary view
 foreground = document.getElementById('foreground').getContext('2d');
@@ -576,7 +640,12 @@ function path(d, ctx, color) {
 };
 
 function color(d,a) {
-  var c = colors[d];
+  if(document.getElementById('color-mode').value === "region"){
+    var c = regionColors[states2Region[d]];
+  }
+  else{
+    var c = colors[d];
+  }
   return ["hsla(",c[0],",",c[1],"%,",c[2],"%,",a,")"].join("");
 }
 
@@ -762,20 +831,57 @@ function update_ticks(d, extent) {
 }
 
 // Rescale to new dataset domain
-function rescale() {
-  // reset yscales, preserving inverted state
-  dimensions.forEach(function(d,i) {
-    if (yscale[d].inverted) {
-      yscale[d] = d3.scale.linear()
-          .domain(d3.extent(data, function(p) { return +p[d]; }))
-          .range([0, h]);
-      yscale[d].inverted = true;
-    } else {
-      yscale[d] = d3.scale.linear()
-          .domain(d3.extent(data, function(p) { return +p[d]; }))
-          .range([h, 0]);
-    }
-  });
+function rescale(sameAxis = false ) {
+
+  if(document.getElementById("same-att-check").checked)
+  {
+    dimensions.forEach(function(d,i) {
+      if (yscale[d].inverted) {
+        yscale[d] = d3.scale.linear()
+            .domain(d3.extent(data, function(p) { 
+              
+              
+              var maxAllYears = 
+              Math.max(p[d.slice(0, d.length - 4).concat(data_years[0])]  ,
+                       p[d.slice(0, d.length - 4).concat(data_years[1])] 
+                      );
+
+              //console.log(p[d.slice(0, d.length - 4).concat(data_years[0])]);
+              //console.log(p[d.slice(0, d.length - 4).concat(data_years[1])]);
+              //console.log(maxAllYears);
+              
+              return maxAllYears ? (+maxAllYears) : (+p[d]);
+             }))
+            .range([0, h]);
+        yscale[d].inverted = true;
+      } else {
+        yscale[d] = d3.scale.linear()
+            .domain(d3.extent(data, function(p) {             
+              var maxAllYears = 
+              Math.max(p[d.slice(0, d.length - 4).concat(data_years[0])]  ,
+                       p[d.slice(0, d.length - 4).concat(data_years[1])]  );
+              
+              return maxAllYears ? (+maxAllYears) : (+p[d]);
+            }))
+            .range([h, 0]);
+      }
+    });
+  }
+  else{
+    // reset yscales, preserving inverted state
+    dimensions.forEach(function(d,i) {
+      if (yscale[d].inverted) {
+        yscale[d] = d3.scale.linear()
+            .domain(d3.extent(data, function(p) { return +p[d]; }))
+            .range([0, h]);
+        yscale[d].inverted = true;
+      } else {
+        yscale[d] = d3.scale.linear()
+            .domain(d3.extent(data, function(p) { return +p[d]; }))
+            .range([h, 0]);
+      }
+    });
+  }
 
   update_ticks();
 
@@ -900,6 +1006,49 @@ d3.select("#search").on("keyup", brush);
 
 d3.select("#search-dimension").on("keyup", brush)
 
+d3.select("#color-mode").on("change", drawAxis)
+
+d3.select("#region-select").on("change", function(){
+  //document.getElementById("color-mode").value = "states";
+  document.getElementById("state-select").value = "all";
+  console.log(this.value);
+  excluded_groups = [];
+  if(this.value != "all") 
+  {
+
+    for(state in states2Region)
+    {
+      if(states2Region[state] != this.value)
+      {
+        excluded_groups.push(state);
+      }
+    }
+  }
+  brush();
+})
+
+d3.select("#state-select").on("change", function(){
+  console.log(this.value);
+  excluded_groups = [];
+  if(this.value != "all") 
+  {
+    for(state in states2Region)
+    {
+      if(state != this.value)
+      {
+        excluded_groups.push(state);
+      }
+    }
+  }
+
+  brush();
+})
+
+d3.select("#same-att-check").on("change", function(){
+  //console.log("change same-att-check");
+  rescale(true);
+
+});
 
 // Appearance toggles
 d3.select("#hide-ticks").on("click", hide_ticks);
