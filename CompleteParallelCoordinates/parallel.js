@@ -639,7 +639,15 @@ function path(d, ctx, color) {
   ctx.stroke();
 };
 
-function color(d,a) {
+var attrRanges = [[0,5000],[5000,10000],[10000,100000],[100000]];
+var rangesColors = [[120,56,40], [28,100,52], [359,69,49],[204,70,41],[60,86,61]];
+
+function color(d,a, attrValue = {}, attrKey = {}) {
+  if(attrValue != undefined)
+  {
+    console.log("attrValue ", attrValue);
+    console.log("attrKey ", attrKey);
+  }
   if(document.getElementById('color-mode').value === "region"){
     var c = regionColors[states2Region[d]];
   }

@@ -1,0 +1,28 @@
+<agm-map 
+  [latitude]="lat"
+  [longitude]="lng"
+  [zoom]="zoom"
+  [disableDefaultUI]="false"
+  [zoomControl]="true"
+  (mapClick)="mapClicked($event)"
+  (zoomChange)="zoomChanged($event)">
+
+  <agm-marker 
+      *ngFor="let m of markers; let i = index"
+      (markerClick)="clickedMarker(m.label, i)"
+      [latitude]="m.lat"
+      [longitude]="m.lng"
+      [label]="m.label"
+      [markerDraggable]="m.draggable"
+      (dragEnd)="markerDragEnd(m, $event)"
+      [iconUrl]="m.icon"
+  ></agm-marker>
+
+  <agm-polyline [editable]="true">
+    <agm-polyline-point *ngFor="let data of linesData" 
+        [latitude]="data.lat"
+        [longitude]="data.lng">
+    </agm-polyline-point>
+  </agm-polyline>
+
+</agm-map>
